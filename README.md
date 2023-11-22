@@ -61,13 +61,6 @@ Inter-token latency is the average time between consecutive tokens, this is to a
 
 ![itl](.assets/itl.png)
 
-| Framework  | Model                                   | Mean  |
-|------------|-----------------------------------------|-------|
-| together   | togethercomputer/llama-2-70b-chat       | 18.41 |
-| anyscale   | meta-llama/Llama-2-70b-chat-hf          | 32.71 |
-| perplexity | llama-2-70b-chat                        | 40.45 |
-| fireworks  | fireworks/models/llama-v2-70b-chat      | 73.44 |
-
 
 ### Run Configurations
 
