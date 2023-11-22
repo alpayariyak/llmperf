@@ -28,7 +28,7 @@ We hope the results obtained from this exercise help people understand the capab
 
 In streaming applications, the TTFT is how long before the LLM returns the first token.
 
-![ttft](.assets/ttft.svg)
+![ttft](.assets/ttft.png)
 
 | Framework  | Model                                   | Mean  | Percentiles (P25 \| P50 \| P75 \| P90 \| P95)      |
 |------------|-----------------------------------------|-------|----------------------------------------------------|
@@ -42,7 +42,7 @@ In streaming applications, the TTFT is how long before the LLM returns the first
 
 The end to end time from when the request is made to the last token is received in the response.
 
-![e2e](.assets/e2e.svg)
+![e2e](.assets/e2e.png)
 
 | Framework  | Model                                   | Mean  | Percentiles (P25 \| P50 \| P75 \| P90 \| P95)      |
 |------------|-----------------------------------------|-------|----------------------------------------------------|
@@ -52,11 +52,14 @@ The end to end time from when the request is made to the last token is received 
 | fireworks  | fireworks/models/llama-v2-70b-chat      | 4.95  | 4.34 \| 5.19 \| 5.51 \| 5.98 \| 6.29              |
 
 
+> :warning: * Fireworks and Perplexity output less number of tokens (~70 while Anyscale and TogetherAI are at 150) so the e2e time is normalized per token.
+
+
 ### Inter Token Latency (ms)
 
 Inter-token latency is the average time between consecutive tokens, this is to avoid bias in systems that start streaming very late in end-to-end measurement. (Since not all systems support streaming, we have also omitted the percentiles since it's not meaningful).
 
-![itl](.assets/itl.svg)
+![itl](.assets/itl.png)
 
 | Framework  | Model                                   | Mean  |
 |------------|-----------------------------------------|-------|
