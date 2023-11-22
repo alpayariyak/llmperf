@@ -52,7 +52,7 @@ The end to end time from when the request is made to the last token is received 
 | fireworks  | fireworks/models/llama-v2-70b-chat      | 4.95  | 4.34 \| 5.19 \| 5.51 \| 5.98 \| 6.29              |
 
 
-> :warning: * Fireworks and Perplexity output less number of tokens (~70 while Anyscale and TogetherAI are at 150) so the e2e time is normalized per token.
+> :warning:  Fireworks and Perplexity output less number of tokens (~70 while Anyscale and TogetherAI are at 150) so the e2e time is normalized per token.
 
 
 ### Inter Token Latency (ms)
