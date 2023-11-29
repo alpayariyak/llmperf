@@ -31,12 +31,13 @@ In streaming applications, the TTFT is how long before the LLM returns the first
 ![ttft](.assets/ttft.png)
 
 
-| Framework  | Model                                          | Mean TTFT | Percentiles (P25 | P50 | P75 | P95 | P99) |
-|------------|------------------------------------------------|-----------|---------------------------------------------|
-| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 0.288     | 0.200 | 0.287 | 0.307 | 0.522 | 0.651   |
-| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 0.416     | 0.309 | 0.335 | 0.407 | 0.651 | 0.802   |
-| together   | together_ai/togethercomputer/llama-2-70b-chat  | 0.454     | 0.370 | 0.478 | 0.503 | 0.590 | 0.694   |
-| perplexity | llama-2-70b-chat                               | 0.503     | 0.465 | 0.496 | 0.548 | 0.868 | 0.988   |
+| Framework  | Model                                        | Mean TTFT | P25    | P50    | P75    | P95    | P99    |
+|------------|----------------------------------------------|-----------|--------|--------|--------|--------|--------|
+| anyscale   | meta-llama/Llama-2-70b-chat-hf               | 0.288     | 0.200  | 0.287  | 0.307  | 0.522  | 0.651  |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat  | 0.416     | 0.309  | 0.335  | 0.407  | 0.651  | 0.802  |
+| together   | together_ai/togethercomputer/llama-2-70b-chat| 0.454     | 0.370  | 0.478  | 0.503  | 0.590  | 0.694  |
+| perplexity | llama-2-70b-chat                             | 0.503     | 0.465  | 0.496  | 0.548  | 0.868  | 0.988  |
+
 
 
 
@@ -46,12 +47,14 @@ The end to end time from when the request is made to the last token is received 
 
 ![e2e](.assets/e2e.png)
 
-| Framework  | Model                                          | Mean E2E  | Percentiles (P25 | P50 | P75 | P95 | P99)  |
-|------------|------------------------------------------------|-----------|--------------------------------------------|
-| together   | together_ai/togethercomputer/llama-2-70b-chat  | 1.952     | 1.770 | 1.967 | 2.097 | 2.277 | 2.406      |
-| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 3.587     | 3.410 | 3.502 | 3.715 | 4.127 | 4.429      |
-| perplexity | llama-2-70b-chat                               | 3.716     | 3.254 | 3.460 | 3.867 | 5.153 | 5.305      |
-| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 4.587     | 4.484 | 4.558 | 4.694 | 4.891 | 5.081      |
+| Framework  | Model                                        | Mean E2E  | P25    | P50    | P75    | P95    | P99    |
+|------------|----------------------------------------------|-----------|--------|--------|--------|--------|--------|
+| together   | together_ai/togethercomputer/llama-2-70b-chat| 1.952     | 1.770  | 1.967  | 2.097  | 2.277  | 2.406  |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat  | 3.587     | 3.410  | 3.502  | 3.715  | 4.127  | 4.429  |
+| perplexity | llama-2-70b-chat                             | 3.716     | 3.254  | 3.460  | 3.867  | 5.153  | 5.305  |
+| anyscale   | meta-llama/Llama-2-70b-chat-hf               | 4.587     | 4.484  | 4.558  | 4.694  | 4.891  | 5.081  |
+
+
 
 
 ### Inter Token Latency (ms)
@@ -60,12 +63,14 @@ Inter-token latency is the average time between consecutive tokens, this is to a
 
 ![itl](.assets/itl.png)
 
-| Framework  | Model                                          | Mean ITL  | Percentiles (P25 | P50 | P75 | P95 | P99)  |
-|------------|------------------------------------------------|-----------|--------------------------------------------|
-| together   | together_ai/togethercomputer/llama-2-70b-chat  | 12.120    | 11.200 | 12.273 | 12.939 | 14.083 | 14.880  |
-| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 23.082    | 21.885 | 22.560 | 23.880 | 26.715 | 28.497  |
-| perplexity | llama-2-70b-chat                               | 24.591    | 21.541 | 22.913 | 25.572 | 34.125 | 35.134  |
-| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 29.728    | 29.125 | 29.338 | 30.337 | 31.769 | 32.767  |
+
+| Framework  | Model                                        | Mean ITL  | P25    | P50    | P75    | P95    | P99    |
+|------------|----------------------------------------------|-----------|--------|--------|--------|--------|--------|
+| together   | together_ai/togethercomputer/llama-2-70b-chat| 12.120    | 11.200 | 12.273 | 12.939 | 14.083 | 14.880 |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat  | 23.082    | 21.885 | 22.560 | 23.880 | 26.715 | 28.497 |
+| perplexity | llama-2-70b-chat                             | 24.591    | 21.541 | 22.913 | 25.572 | 34.125 | 35.134 |
+| anyscale   | meta-llama/Llama-2-70b-chat-hf               | 29.728    | 29.125 | 29.338 | 30.337 | 31.769 | 32.767 |
+
 
 
 
