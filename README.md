@@ -22,7 +22,7 @@ including Fireworks, TogetherAI, Anyscale, Perplexity, and others.
 This benchmarking was aimed at evaluating the performance, reliability, and efficiency of these providers under various conditions. 
 We hope the results obtained from this exercise help people understand the capabilities and limitations of each provider, thereby aiding in making informed decisions for future integrations and deployments. Here is a detailed report of our findings.
 
-(Results as of November 21, 2023)
+(Results as of November 29, 2023)
 
 ### Time to first token (seconds)
 
@@ -30,12 +30,14 @@ In streaming applications, the TTFT is how long before the LLM returns the first
 
 ![ttft](.assets/ttft.png)
 
-| Framework  | Model                                   | Mean  | Percentiles (P25 \| P50 \| P75 \| P90 \| P95)      |
-|------------|-----------------------------------------|-------|----------------------------------------------------|
-| anyscale   | meta-llama/Llama-2-70b-chat-hf          | 0.31  | 0.28 \| 0.29 \| 0.33 \| 0.39 \| 0.46              |
-| perplexity | llama-2-70b-chat                        | 0.34  | 0.28 \| 0.29 \| 0.35 \| 0.48 \| 0.56              |
-| together   | togethercomputer/llama-2-70b-chat       | 0.44  | 0.36 \| 0.38 \| 0.49 \| 0.55 \| 0.64              |
-| fireworks  | fireworks/models/llama-v2-70b-chat      | 0.74  | 0.64 \| 0.72 \| 0.80 \| 0.96 \| 1.11              |
+
+| Framework  | Model                                          | Mean TTFT | Percentiles (P25 | P50 | P75 | P95 | P99)  |
+|------------|------------------------------------------------|-----------|--------------------------------------------|
+| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 0.288     | 0.200 | 0.287 | 0.307 | 0.522 | 0.651      |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 0.416     | 0.309 | 0.335 | 0.407 | 0.651 | 0.802      |
+| together   | together_ai/togethercomputer/llama-2-70b-chat  | 0.454     | 0.370 | 0.478 | 0.503 | 0.590 | 0.694      |
+| perplexity | llama-2-70b-chat                               | 0.503     | 0.465 | 0.496 | 0.548 | 0.868 | 0.988      |
+
 
 
 ### E2E Time (seconds) 
@@ -44,15 +46,12 @@ The end to end time from when the request is made to the last token is received 
 
 ![e2e](.assets/e2e.png)
 
-| Framework  | Model                                   | Mean  | Percentiles (P25 \| P50 \| P75 \| P90 \| P95)      |
-|------------|-----------------------------------------|-------|----------------------------------------------------|
-| together   | togethercomputer/llama-2-70b-chat       | 2.74  | 2.47 \| 2.73 \| 3.00 \| 3.22 \| 3.33              |
-| perplexity | llama-2-70b-chat                        | 2.98  | 2.90 \| 3.04 \| 3.15 \| 3.26 \| 3.34              |
-| anyscale   | meta-llama/Llama-2-70b-chat-hf          | 4.95  | 4.80 \| 4.96 \| 5.13 \| 5.27 \| 5.36              |
-| fireworks  | fireworks/models/llama-v2-70b-chat      | 4.95  | 4.34 \| 5.19 \| 5.51 \| 5.98 \| 6.29              |
-
-
-> :warning: Fireworks and Perplexity generate fewer output tokens, specifically around 70, compared to Anyscale and TogetherAI, which produce about 150 tokens. Consequently, the end-to-end time isn't normalized per token. To accurately compare token latency, refer to the Inter Token Latency.
+| Framework  | Model                                          | Mean E2E  | Percentiles (P25 | P50 | P75 | P95 | P99)  |
+|------------|------------------------------------------------|-----------|--------------------------------------------|
+| together   | together_ai/togethercomputer/llama-2-70b-chat  | 1.952     | 1.770 | 1.967 | 2.097 | 2.277 | 2.406      |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 3.587     | 3.410 | 3.502 | 3.715 | 4.127 | 4.429      |
+| perplexity | llama-2-70b-chat                               | 3.716     | 3.254 | 3.460 | 3.867 | 5.153 | 5.305      |
+| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 4.587     | 4.484 | 4.558 | 4.694 | 4.891 | 5.081      |
 
 
 ### Inter Token Latency (ms)
@@ -60,6 +59,14 @@ The end to end time from when the request is made to the last token is received 
 Inter-token latency is the average time between consecutive tokens, this is to avoid bias in systems that start streaming very late in end-to-end measurement. (Since not all systems support streaming, we have also omitted the percentiles since it's not meaningful).
 
 ![itl](.assets/itl.png)
+
+| Framework  | Model                                          | Mean ITL  | Percentiles (P25 | P50 | P75 | P95 | P99)  |
+|------------|------------------------------------------------|-----------|--------------------------------------------|
+| together   | together_ai/togethercomputer/llama-2-70b-chat  | 12.120    | 11.200 | 12.273 | 12.939 | 14.083 | 14.880  |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 23.082    | 21.885 | 22.560 | 23.880 | 26.715 | 28.497  |
+| perplexity | llama-2-70b-chat                               | 24.591    | 21.541 | 22.913 | 25.572 | 34.125 | 35.134  |
+| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 29.728    | 29.125 | 29.338 | 30.337 | 31.769 | 32.767  |
+
 
 
 ### Run Configurations
@@ -77,6 +84,8 @@ For each of the benchmark run, it is performed with the below command template:
     --num-concurrent-requests 5 \
     --llm-api <litellm/openai> 
 ```
+
+For each provider, we perform a total of 150 requests, with concurrency of 5 (5 concurrent requests to the provider), with prompt's token length of 550, and expected output tokens length of 150. 
 
 
 ## Supported endpoints 
