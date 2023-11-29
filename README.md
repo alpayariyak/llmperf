@@ -31,12 +31,12 @@ In streaming applications, the TTFT is how long before the LLM returns the first
 ![ttft](.assets/ttft.png)
 
 
-| Framework  | Model                                          | Mean TTFT | Percentiles (P25 | P50 | P75 | P95 | P99)  |
-|------------|------------------------------------------------|-----------|--------------------------------------------|
-| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 0.288     | 0.200 | 0.287 | 0.307 | 0.522 | 0.651      |
-| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 0.416     | 0.309 | 0.335 | 0.407 | 0.651 | 0.802      |
-| together   | together_ai/togethercomputer/llama-2-70b-chat  | 0.454     | 0.370 | 0.478 | 0.503 | 0.590 | 0.694      |
-| perplexity | llama-2-70b-chat                               | 0.503     | 0.465 | 0.496 | 0.548 | 0.868 | 0.988      |
+| Framework  | Model                                          | Mean TTFT | Percentiles (P25 | P50 | P75 | P95 | P99) |
+|------------|------------------------------------------------|-----------|---------------------------------------------|
+| anyscale   | meta-llama/Llama-2-70b-chat-hf                 | 0.288     | 0.200 | 0.287 | 0.307 | 0.522 | 0.651   |
+| fireworks  | accounts/fireworks/models/llama-v2-70b-chat    | 0.416     | 0.309 | 0.335 | 0.407 | 0.651 | 0.802   |
+| together   | together_ai/togethercomputer/llama-2-70b-chat  | 0.454     | 0.370 | 0.478 | 0.503 | 0.590 | 0.694   |
+| perplexity | llama-2-70b-chat                               | 0.503     | 0.465 | 0.496 | 0.548 | 0.868 | 0.988   |
 
 
 
