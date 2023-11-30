@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 import pandas as pd
 from transformers import LlamaTokenizerFast
 from huggingface_hub import InferenceClient
+import requests, sseclient
 
 FRAMEWORKS = [
     "anyscale",
@@ -18,7 +19,8 @@ FRAMEWORKS = [
     "perplexity",
     "together",
     "vllm",
-    "tgi"
+    "tgi",
+    "runpod",
 ]
 
 os.environ["TOKENIZERS_PARALLELISM"] = "true"
@@ -239,6 +241,37 @@ def validate(ep_config, sample_lines):
             et = time.time()
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
+    elif ep_config["framework"] == "runpod":
+        url = ep_config["api_base"]
+        headers = {
+            "Authorization": f"Bearer {ep_config['api_key']}",
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "input": {
+                "prompt": prompt,
+                "sampling_params": {
+                    "max_tokens": args.max_tokens,
+                    "temperature": 0,
+                }
+            }
+        }
+        try:
+            st = time.time()
+            run_url = url + "/run"
+            response = requests.post(run_url, headers=headers, json=payload)
+            response.raise_for_status()
+            job_id = response.json()["id"]
+            status_url = url + "/status/" + job_id
+            while True:
+                status = requests.get(status_url, headers=headers).json()
+                if status["status"] == "COMPLETED":
+                    break
+                time.sleep(1)
+            words += status["output"][-1]["text"][0] # < FOR NEW WORKER# # status["output"]["text"][0] < FOR OLD WORKER #
+            et = time.time()
+        except Exception as e:
+            return ("Exception", -1, -1, -1, -1, str(e), "")
 
     # Get rid of commas.
     tokens_out = len(tokenizer.encode(words))
@@ -279,7 +312,7 @@ def endpoint_evaluation(ep_config, sample_lines):
             print(f"No need to sleep for the next round")
         print(f"Round {i} complete")
     overall_end_time = time.time()
-    print(f"Overall execution time {overall_end_time-overall_start_time}")
+    print(f"Overall execution time {overall_end_time - overall_start_time}")
     return query_results
 
 
@@ -329,19 +362,19 @@ def results_analysis(query_results, results_dict):
         mean_ttft = cdf["ttft"].mean()
         max_ttft = cdf["ttft"].max()
         gt_3_ttft = len(cdf[cdf["ttft"] > 3]) / len(cdf)
-        print(f"Mean End-to-end: {mean_e2e*1000.0:.0f} ms")
+        print(f"Mean End-to-end: {mean_e2e * 1000.0:.0f} ms")
         print(
-            f"Mean TTFT: {mean_ttft*1000:.0f} ms (mean tokens in: {mean_tokens_in:.0f}, out: {mean_tokens_out:.0f})"
+            f"Mean TTFT: {mean_ttft * 1000:.0f} ms (mean tokens in: {mean_tokens_in:.0f}, out: {mean_tokens_out:.0f})"
         )
-        print(f"Max TTFT: {max_ttft*1000:.0f} ms")
-        print(f"TTFT > 3 s: {gt_3_ttft*100:.2f}%")
+        print(f"Max TTFT: {max_ttft * 1000:.0f} ms")
+        print(f"TTFT > 3 s: {gt_3_ttft * 100:.2f}%")
         print(
-            f"ITL (out): {cdf.inter_tokens_delay.mean()*1000:.2f} ms/token, mean tokens/s output (out): {cdf.out_tokens_per_s.mean():.2f} token/s"
+            f"ITL (out): {cdf.inter_tokens_delay.mean() * 1000:.2f} ms/token, mean tokens/s output (out): {cdf.out_tokens_per_s.mean():.2f} token/s"
         )
         # Put things in a dictionary and save the results
         results_dict["end_timestamp"] = datetime.datetime.fromtimestamp(ts).isoformat()
         results_dict["total_time"] = float(cdf.total_time.mean())
-        results_dict["mean_ttft"] = int(f"{mean_ttft*1000:.0f}")
+        results_dict["mean_ttft"] = int(f"{mean_ttft * 1000:.0f}")
         results_dict["mean_tokens_in"] = mean_tokens_in
         results_dict["mean_tokens_out"] = mean_tokens_out
         results_dict["total_tokens_per_s"] = float(cdf.total_tokens_per_s.mean())
@@ -376,7 +409,7 @@ if __name__ == "__main__":
         "-m",
         "--model",
         type=str,
-        default="meta-llama/Llama-2-70b-chat-hf",
+        default="mistralai/Mistral-7B-v0.1",
         help="model name",
     )
     parser.add_argument(
@@ -466,8 +499,11 @@ if __name__ == "__main__":
         endpoint_config["api_base"] = os.environ["VLLM_API_BASE"]
         endpoint_config["api_key"] = os.environ["VLLM_API_KEY"]
     elif args.framework == "tgi":
-        endpoint_config["api_base"]=os.environ["TGI_API_BASE"]
-        endpoint_config["api_key"]=os.environ["TGI_API_KEY"]
+        endpoint_config["api_base"] = os.environ["TGI_API_BASE"]
+        endpoint_config["api_key"] = os.environ["TGI_API_KEY"]
+    elif args.framework == "runpod":
+        endpoint_config["api_base"] = "https://api.runpod.ai/v2/" +  os.environ["RUNPOD_ENDPOINT_ID"]
+        endpoint_config["api_key"] = os.environ["RUNPOD_API_KEY"]
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
