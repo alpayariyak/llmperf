@@ -249,7 +249,7 @@ def validate(ep_config, sample_lines):
         }
         payload = {
             "input": {
-                "prompt":  f"[INST] {sys_prompt} \n {prompt} [/INST]",
+                "prompt":  f"{sys_prompt}\n{prompt}" if not ep_config["use_llama_chat_prompt"] else f"[INST] <<SYS>>\n{sys_prompt}\n<</SYS>>\n\n{prompt} [/INST]",
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
@@ -268,8 +268,8 @@ def validate(ep_config, sample_lines):
                 if status["status"] == "COMPLETED":
                     break
                 time.sleep(1)
-            words += status["output"][-1]["text"][0] # < FOR NEW WORKER# # status["output"]["text"][0] < FOR OLD WORKER #
             et = time.time()
+            words += status["output"][-1]["text"][0] if ep_config["runpod_worker_is_new"] else status["output"]["text"][0]
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
 
@@ -457,6 +457,12 @@ if __name__ == "__main__":
         default=117,
         help="Random seed to standardize results. By default fully random.",
     )
+    parser.add_argument(
+        "--use_llama_chat_prompt",
+        type=bool,
+        default=True,
+        help="Use llama chat prompt. Quick Deploy applies template while new worker doesn't.",
+    )
     args = parser.parse_args()
     load_dotenv()
     endpoint_config = {}
@@ -504,6 +510,8 @@ if __name__ == "__main__":
     elif args.framework == "runpod":
         endpoint_config["api_base"] = "https://api.runpod.ai/v2/" +  os.environ["RUNPOD_ENDPOINT_ID"]
         endpoint_config["api_key"] = os.environ["RUNPOD_API_KEY"]
+        endpoint_config["use_llama_chat_prompt"] = args.use_llama_chat_prompt
+        endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_NEW"])
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
