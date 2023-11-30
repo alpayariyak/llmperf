@@ -32,7 +32,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # read from args to facilitate writing scripts.
 
 tokenizer = LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
-sys_prompt = "You are a helpful assistant that respeonds with the answer in the most concise possible way."
+sys_prompt = "You are a helpful assistant that responds with the answer in the most concise possible way."
 
 
 class LineIterator:
@@ -249,7 +249,7 @@ def validate(ep_config, sample_lines):
         }
         payload = {
             "input": {
-                "prompt": prompt,
+                "prompt":  f"[INST] {sys_prompt} \n {prompt} [/INST]",
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
