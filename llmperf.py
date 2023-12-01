@@ -11,6 +11,7 @@ from huggingface_hub import InferenceClient
 import requests, sseclient
 from typing import List, Optional, Union
 import io 
+import time
 
 FRAMEWORKS = [
     "anyscale",
@@ -136,10 +137,17 @@ def validate(ep_config, sample_lines, tokenizer):
                 # Please keep temp at 0. Otherwise increases the number of mismatches.
                 temperature=0,
                 # Do not set to false. You will get bogus results.
-                stream=False,
-                ignore_eos=True,
+                stream=True
             )
-            words = response.choices[0]["message"]["content"]
+            for tok in response:
+                id = tok.id
+                if tok.choices[0].delta:
+                    delta = tok.choices[0].delta
+                    if "content" in delta:
+                        if ttft == 0:
+                            ttft = time.time() - st
+                        words += delta["content"]
+                
             et = time.time()
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
@@ -262,17 +270,28 @@ def validate(ep_config, sample_lines, tokenizer):
                 "prompt":  input_prompt,
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
-                    "temperature": 0.1,
-                    "ignore_eos": True,
+                    "temperature": 0,
+                    # "ignore_eos": True,
                 }
             }
         }
       
         try:
             st = time.time()
-            run_url = url + "/runsync"
-            words += requests.post(run_url, headers=headers, json=payload).json()["output"][-1]["aggregate_text"]
+            tokens = []
+            run_url = url + "/run"
+            job_id = requests.post(run_url, headers=headers, json=payload).json()["id"]
+            stream_url = url + "/stream/" + job_id
+            while True:
+                response = requests.get(stream_url, headers=headers).json()
+                if response["status"] == "COMPLETED" :
+                    break
+                tokens.extend(token["output"] for token in response["stream"])
+                if ttft == 0 and len(tokens) > 0:
+                        ttft = time.time() - st
+                time.sleep(0.1)
             et = time.time()
+            words = "".join([t for t in tokens if isinstance(t, str)])
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
 
