@@ -133,16 +133,10 @@ def validate(ep_config, sample_lines, tokenizer):
                 # Please keep temp at 0. Otherwise increases the number of mismatches.
                 temperature=0,
                 # Do not set to false. You will get bogus results.
-                stream=True,
+                stream=False,
+                ignore_eos=True,
             )
-            for tok in response:
-                id = tok.id
-                if tok.choices[0].delta:
-                    delta = tok.choices[0].delta
-                    if "content" in delta:
-                        if ttft == 0:
-                            ttft = time.time() - st
-                        words += delta["content"]
+            words = response.choices[0]["message"]["content"]
             et = time.time()
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
