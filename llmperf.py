@@ -272,7 +272,8 @@ def validate(ep_config, sample_lines, tokenizer):
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
                     # "ignore_eos": True,
-                }
+                },
+                "streaming": True,
             }
         }
       
