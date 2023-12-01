@@ -33,7 +33,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # TODO(mwk): too much dependence on args globally. Clean up methods to not directly
 # read from args to facilitate writing scripts.
 
-sys_prompt = "You are a helpful assistant that responds with the answer in the most concise possible way."
+sys_prompt = "You are a helpful assistant."
 
 def llama_prompt(prompt, system_prompt):
     return f"[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"
@@ -90,13 +90,16 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[]) 
     rnd_num = random.randrange(10 ** (num_digits - 1), 10 ** (num_digits))
     max_lines = max_lines if max_lines < len(file_lines) else len(file_lines)
     rnd_num_lines = random.randrange(min_lines, max_lines)
-    rnd_picked_lines = "\n".join(random.sample(file_lines, rnd_num_lines))
+    rnd_picked_lines = random.sample(file_lines, rnd_num_lines)
+    # Index the lines from 1
+    rnd_picked_lines = [f"{i+1}. {line}" for i, line in enumerate(rnd_picked_lines)]
+    rnd_picked_lines = "\n".join(rnd_picked_lines)
 
     # Step 2: convert to words.
     rnd_num_words = num2words(rnd_num)
 
     # Step 3: convert to a prompt
-    user_prompt = f"Convert the following sequence of words into a number: {rnd_num_words}.\nPrint the number first. Then pick {args.req_lines} lines from these poem lines:\n{rnd_picked_lines}"
+    user_prompt = "Write me a 1000 word long and detailed essay about how the french revolution impacted the rest of europe over the 18th century."
 
     return user_prompt, rnd_num
 
@@ -410,7 +413,7 @@ if __name__ == "__main__":
         "-m",
         "--model",
         type=str,
-        default="mistralai/Mistral-7B-v0.1",
+        default="mistralai/Mistral-7B-v0.1-Instruct",
         help="model name",
     )
     parser.add_argument(
