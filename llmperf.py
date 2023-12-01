@@ -34,6 +34,11 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 tokenizer = LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
 sys_prompt = "You are a helpful assistant that responds with the answer in the most concise possible way."
 
+def llama_prompt(prompt, system_prompt):
+    return f"[INST] <<SYS>>\n{system_prompt}\n<</SYS>>\n\n{prompt} [/INST]"
+
+def mistral_prompt(prompt, system_prompt):
+    return f"[INST] {system_prompt} \n {prompt} [/INST]"
 
 class LineIterator:
     """
@@ -249,13 +254,17 @@ def validate(ep_config, sample_lines):
         }
         payload = {
             "input": {
-                "prompt":  f"{sys_prompt}\n{prompt}" if not ep_config["use_llama_chat_prompt"] else f"[INST] <<SYS>>\n{sys_prompt}\n<</SYS>>\n\n{prompt} [/INST]",
+                "prompt":  sys_prompt + prompt,
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
                 }
             }
         }
+        if ep_config["prompt_template"] == "llama":
+            payload["input"]["prompt"] = llama_prompt(prompt, sys_prompt)
+        elif ep_config["prompt_template"] == "mistral":
+            payload["input"]["prompt"] = mistral_prompt(prompt, sys_prompt)
         try:
             st = time.time()
             run_url = url + "/run"
@@ -458,10 +467,11 @@ if __name__ == "__main__":
         help="Random seed to standardize results. By default fully random.",
     )
     parser.add_argument(
-        "--use_llama_chat_prompt",
-        type=bool,
-        default=True,
-        help="Use llama chat prompt. Quick Deploy applies template while new worker doesn't.",
+        "--prompt-template",
+        type=choice,
+        default="llama",
+        choices=["llama", "mistral"],
+        help="Prompt template to use.",
     )
     args = parser.parse_args()
     load_dotenv()
@@ -510,7 +520,7 @@ if __name__ == "__main__":
     elif args.framework == "runpod":
         endpoint_config["api_base"] = "https://api.runpod.ai/v2/" +  os.environ["RUNPOD_ENDPOINT_ID"]
         endpoint_config["api_key"] = os.environ["RUNPOD_API_KEY"]
-        endpoint_config["use_llama_chat_prompt"] = args.use_llama_chat_prompt
+        endpoint_config["prompt_template"] = args.prompt_template
         endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_NEW"])
 
     endpoint_config["framework"] = args.framework
