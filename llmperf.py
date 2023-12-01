@@ -102,7 +102,7 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[]) 
 
 
 @ray.remote(num_cpus=0.001)
-def validate(ep_config, sample_lines):
+def validate(ep_config, sample_lines, tokenizer):
     # The 4 is for the end and start tokens of the messages
     prompt, rnd_num = prompt_generator(
         args.num_digits, args.min_lines, args.max_lines, sample_lines
@@ -295,7 +295,7 @@ def validate(ep_config, sample_lines):
     return (valid, ttft, et - st, tokens_in, tokens_out, cause, id)
 
 
-def endpoint_evaluation(ep_config, sample_lines):
+def endpoint_evaluation(ep_config, sample_lines, tokenizer):
     query_results = []
     overall_start_time = time.time()
     num_rounds = int(args.total_requests / args.concur_requests)
@@ -303,7 +303,7 @@ def endpoint_evaluation(ep_config, sample_lines):
         print(f"Starting round {i}")
         st = time.time()
         futures = [
-            validate.remote(ep_config, sample_lines)
+            validate.remote(ep_config, sample_lines, tokenizer)
             for _ in range(args.concur_requests)
         ]
         results = ray.get(futures)
@@ -530,7 +530,7 @@ if __name__ == "__main__":
     f.close()
 
     ## Endpoint evaluation
-    query_results = endpoint_evaluation(endpoint_config, sample_lines)
+    query_results = endpoint_evaluation(endpoint_config, sample_lines, tokenizer)
 
     ## Results Analysis
     args.api_base = endpoint_config["api_base"]
