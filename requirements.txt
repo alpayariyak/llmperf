@@ -9,10 +9,11 @@ scikit-learn
 ray[default]
 tokenizers==0.13.3
 huggingface-hub
+async_timeout
 ### Extra dependency for Together
-#requests
-#sseclient-py
+requests
+sseclient-py
 ### Extra dependency for Vertex AI
-#google-cloud-aiplatform
+# google-cloud-aiplatform
 ### Extra dependency for SageMaker
-#boto3
+# boto3

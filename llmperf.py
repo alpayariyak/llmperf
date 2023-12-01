@@ -6,9 +6,11 @@ import time, os, sys, re, json, datetime
 import random
 from dotenv import load_dotenv
 import pandas as pd
-from transformers import LlamaTokenizerFast
+from transformers import AutoTokenizer
 from huggingface_hub import InferenceClient
 import requests, sseclient
+from typing import List, Optional, Union
+import io 
 
 FRAMEWORKS = [
     "anyscale",
@@ -31,7 +33,6 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 # TODO(mwk): too much dependence on args globally. Clean up methods to not directly
 # read from args to facilitate writing scripts.
 
-tokenizer = LlamaTokenizerFast.from_pretrained("hf-internal-testing/llama-tokenizer")
 sys_prompt = "You are a helpful assistant that responds with the answer in the most concise possible way."
 
 def llama_prompt(prompt, system_prompt):
@@ -252,33 +253,29 @@ def validate(ep_config, sample_lines):
             "Authorization": f"Bearer {ep_config['api_key']}",
             "Content-Type": "application/json"
         }
+        if ep_config["prompt_template"] == "llama":
+            input_prompt = llama_prompt(prompt, sys_prompt)
+        elif ep_config["prompt_template"] == "mistral":
+            input_prompt = mistral_prompt(prompt, sys_prompt)
+        else:
+            input_prompt = sys_prompt + "\n" + prompt 
+
         payload = {
             "input": {
-                "prompt":  sys_prompt + prompt,
+                "prompt":  input_prompt,
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
-                    "temperature": 0,
+                    "temperature": 0.1,
+                    "ignore_eos": True,
                 }
             }
         }
-        if ep_config["prompt_template"] == "llama":
-            payload["input"]["prompt"] = llama_prompt(prompt, sys_prompt)
-        elif ep_config["prompt_template"] == "mistral":
-            payload["input"]["prompt"] = mistral_prompt(prompt, sys_prompt)
+      
         try:
             st = time.time()
-            run_url = url + "/run"
-            response = requests.post(run_url, headers=headers, json=payload)
-            response.raise_for_status()
-            job_id = response.json()["id"]
-            status_url = url + "/status/" + job_id
-            while True:
-                status = requests.get(status_url, headers=headers).json()
-                if status["status"] == "COMPLETED":
-                    break
-                time.sleep(1)
+            run_url = url + "/runsync"
+            words += requests.post(run_url, headers=headers, json=payload).json()["output"][-1]["aggregate_text"]
             et = time.time()
-            words += status["output"][-1]["text"][0] if ep_config["runpod_worker_is_new"] else status["output"]["text"][0]
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
 
@@ -380,6 +377,7 @@ def results_analysis(query_results, results_dict):
         print(
             f"ITL (out): {cdf.inter_tokens_delay.mean() * 1000:.2f} ms/token, mean tokens/s output (out): {cdf.out_tokens_per_s.mean():.2f} token/s"
         )
+        print("Mean tokens/s: %.2f" % cdf.total_tokens_per_s.mean())
         # Put things in a dictionary and save the results
         results_dict["end_timestamp"] = datetime.datetime.fromtimestamp(ts).isoformat()
         results_dict["total_time"] = float(cdf.total_time.mean())
@@ -468,9 +466,9 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--prompt-template",
-        type=choice,
-        default="llama",
-        choices=["llama", "mistral"],
+        type=str,
+        default=None,
+        choices=["llama", "mistral", None],
         help="Prompt template to use.",
     )
     args = parser.parse_args()
@@ -521,10 +519,11 @@ if __name__ == "__main__":
         endpoint_config["api_base"] = "https://api.runpod.ai/v2/" +  os.environ["RUNPOD_ENDPOINT_ID"]
         endpoint_config["api_key"] = os.environ["RUNPOD_API_KEY"]
         endpoint_config["prompt_template"] = args.prompt_template
-        endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_NEW"])
+        endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_IS_NEW"])
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
+    tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     f = open(args.random_lines_file_name, "r")
     sample_lines = f.readlines()
