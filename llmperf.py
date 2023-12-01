@@ -136,10 +136,16 @@ def validate(ep_config, sample_lines, tokenizer):
                 # Please keep temp at 0. Otherwise increases the number of mismatches.
                 temperature=0,
                 # Do not set to false. You will get bogus results.
-                stream=False,
-                ignore_eos=True,
+                stream=True,
             )
-            words = response.choices[0]["message"]["content"]
+            for tok in response:
+                id = tok.id
+                if tok.choices[0].delta:
+                    delta = tok.choices[0].delta
+                    if "content" in delta:
+                        if ttft == 0:
+                            ttft = time.time() - st
+                        words += delta["content"]
             et = time.time()
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
@@ -262,7 +268,7 @@ def validate(ep_config, sample_lines, tokenizer):
                 "prompt":  input_prompt,
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
-                    "temperature": 0.1,
+                    "temperature": 0,
                     "ignore_eos": True,
                 }
             }
