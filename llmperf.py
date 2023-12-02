@@ -427,8 +427,8 @@ def results_analysis(query_results, results_dict, overall_time):
     error_analysis(df)
     results_dict["raw_output"] = fn
     benchmark_result = f"{results_dict['framework']}-{ts}.json"
-    # cols Thoroughput:Avg Token/s (out),	Thoroughput:Avg Token/s (in+out),	Thoroughput: Concurrent tok/s,	Avg end-to-end request time (s),	,	,	total requests,	concurrent requests,	,	Mean TTFT(ms),	Max TTFT(ms),	TTFT > 3 s:,	ITL (out):
-    print(f"{cdf.out_tokens_per_s.mean():.2f}, {cdf.total_tokens_per_s.mean():.2f}, {all_tokens / results_dict['overall_time']:.2f}, {cdf.total_time.mean():.2f}, , , {len(cdf)}, {args.concur_requests}, , {mean_ttft * 1000:.0f}, {max_ttft * 1000:.0f}, {gt_3_ttft * 100:.2f}, {cdf.inter_tokens_delay.mean() * 1000:.2f}")
+    # cols Thoroughput:Avg Token/s (out),	Thoroughput:Avg Token/s (in+out),	Thoroughput: Concurrent tok/s,	Avg end-to-end request time (s),	,	,	total requests,	concurrent requests,	Mean TTFT(ms),	Max TTFT(ms),	TTFT > 3 s:,	ITL (out):
+    print(f"{cdf.out_tokens_per_s.mean():.2f}, {cdf.total_tokens_per_s.mean():.2f}, {all_tokens / results_dict['overall_time']:.2f}, {cdf.total_time.mean():.2f}, , , {len(cdf)}, {args.concur_requests}, {mean_ttft * 1000:.0f}, {max_ttft * 1000:.0f}, {gt_3_ttft * 100:.2f}, {cdf.inter_tokens_delay.mean() * 1000:.2f}")
     with open(benchmark_result, "w") as fw:
         fw.write(json.dumps(results_dict))
 
