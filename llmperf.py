@@ -87,7 +87,7 @@ class LineIterator:
 
 
 # NOTE: The defaults are set to mirror our production traffic
-def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], original=False) -> str:
+def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], genprompt="new") -> str:
     # Step 1: Generate a random number
     # Generate the number of digits specified (e.g. if NUM_DIGITS = 3, then
     # any number between 100 and 1000 is OK).
@@ -102,11 +102,14 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], 
     # Step 2: convert to words.
     rnd_num_words = num2words(rnd_num)
     # Step 3: convert to a prompt
-    if original:
+    if genprompt == "new":
          # Step 3: convert to a prompt
         user_prompt = f"Convert the following sequence of words into a number: {rnd_num_words}.\nPrint the number first. Then pick {args.req_lines} lines from these poem lines:\n{rnd_picked_lines}"
-    else:
+    elif genprompt == "old":
         user_prompt = "Write me a 1000 word long and detailed essay about how the french revolution impacted the rest of europe over the 18th century."
+    elif genprompt == "both":
+        user_prompt = f"Poem Lines:\n {rnd_picked_lines}. \n Write me a 2000 word long and detailed essay about how the poems of shakespeare have impacted the world for the last 400 years."
+
 
     return user_prompt, rnd_num
 
@@ -115,7 +118,7 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], 
 def validate(ep_config, sample_lines, tokenizer):
     # The 4 is for the end and start tokens of the messages
     prompt, rnd_num = prompt_generator(
-        args.num_digits, args.min_lines, args.max_lines, sample_lines, args.old_genprompt
+        args.num_digits, args.min_lines, args.max_lines, sample_lines, args.gen_prompt
     )
     tokens_in = len(tokenizer.encode(prompt)) + len(tokenizer.encode(sys_prompt)) + 4
     words = ""
@@ -466,7 +469,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--num-digits", type=int, default=3, help="number of digits for mismatch search"
     )
-    parser.add_argument("-o", "--old_genprompt", action="store_true", help="old genprompt")
+    parser.add_argument("--gen-prompt", type=str, choices=["old", "new", "both"], default="new", help="prompt generation method")
     parser.add_argument(
         "--sleep",
         type=int,
@@ -555,7 +558,7 @@ if __name__ == "__main__":
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
-    endpoint_config["old_genprompt"] = args.old_genprompt
+    endpoint_config["gen_prompt"] = args.gen_prompt
     tokenizer = AutoTokenizer.from_pretrained(args.model)
 
     f = open(args.random_lines_file_name, "r")
