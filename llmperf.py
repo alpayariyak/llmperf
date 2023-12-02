@@ -12,6 +12,9 @@ import requests, sseclient
 from typing import List, Optional, Union
 import io 
 import time
+import logging
+
+ray.init(logging_level=logging.ERROR)
 
 FRAMEWORKS = [
     "anyscale",
@@ -273,7 +276,7 @@ def validate(ep_config, sample_lines, tokenizer):
                     "temperature": 0,
                     # "ignore_eos": True,
                 },
-                "streaming": True,
+                "streaming": ep_config["streaming"],
             }
         }
       
@@ -336,10 +339,11 @@ def endpoint_evaluation(ep_config, sample_lines, tokenizer):
         print(f"Round {i} complete")
     overall_end_time = time.time()
     print(f"Overall execution time {overall_end_time - overall_start_time}")
-    return query_results
+    # Save overall execution time
+    return query_results, overall_end_time - overall_start_time
 
 
-def results_analysis(query_results, results_dict):
+def results_analysis(query_results, results_dict, overall_time):
     df = pd.DataFrame(
         query_results,
         columns=[
@@ -395,6 +399,10 @@ def results_analysis(query_results, results_dict):
             f"ITL (out): {cdf.inter_tokens_delay.mean() * 1000:.2f} ms/token, mean tokens/s output (out): {cdf.out_tokens_per_s.mean():.2f} token/s"
         )
         print("Mean tokens/s: %.2f" % cdf.total_tokens_per_s.mean())
+        # Calculate number of all tokens and divide by overall execution time
+        all_tokens = cdf.tokens_in.sum() + cdf.tokens_out.sum()
+        results_dict["overall_time"] = overall_time
+        print(f"Concurrent tokens/s: {all_tokens / results_dict['overall_time']:.2f}")
         # Put things in a dictionary and save the results
         results_dict["end_timestamp"] = datetime.datetime.fromtimestamp(ts).isoformat()
         results_dict["total_time"] = float(cdf.total_time.mean())
@@ -419,7 +427,8 @@ def results_analysis(query_results, results_dict):
     error_analysis(df)
     results_dict["raw_output"] = fn
     benchmark_result = f"{results_dict['framework']}-{ts}.json"
-
+    # cols Thoroughput:Avg Token/s (out),	Thoroughput:Avg Token/s (in+out),	Thoroughput: Concurrent tok/s,	Avg end-to-end request time (s),	,	,	total requests,	concurrent requests,	,	Mean TTFT(ms),	Max TTFT(ms),	TTFT > 3 s:,	ITL (out):
+    print(f"{cdf.out_tokens_per_s.mean():.2f}, {cdf.total_tokens_per_s.mean():.2f}, {all_tokens / results_dict['overall_time']:.2f}, {cdf.total_time.mean():.2f}, , , {len(cdf)}, {args.concur_requests}, , {mean_ttft * 1000:.0f}, {max_ttft * 1000:.0f}, {gt_3_ttft * 100:.2f}, {cdf.inter_tokens_delay.mean() * 1000:.2f}")
     with open(benchmark_result, "w") as fw:
         fw.write(json.dumps(results_dict))
 
@@ -442,6 +451,7 @@ if __name__ == "__main__":
         default="sonnet.txt",
         help="Prompt sample file name",
     )
+    parser.add_argument("-s", "--streaming", action="store_true", help="streaming")
     parser.add_argument("--min-lines", type=int, default=15, help="min number of lines")
     parser.add_argument("--max-lines", type=int, default=50, help="max number of lines")
     parser.add_argument(
@@ -537,6 +547,7 @@ if __name__ == "__main__":
         endpoint_config["api_key"] = os.environ["RUNPOD_API_KEY"]
         endpoint_config["prompt_template"] = args.prompt_template
         endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_IS_NEW"])
+        endpoint_config["streaming"] = args.streaming
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
@@ -547,8 +558,9 @@ if __name__ == "__main__":
     f.close()
 
     ## Endpoint evaluation
-    query_results = endpoint_evaluation(endpoint_config, sample_lines, tokenizer)
+    query_results, overall_time = endpoint_evaluation(endpoint_config, sample_lines, tokenizer)
+
 
     ## Results Analysis
     args.api_base = endpoint_config["api_base"]
-    results_analysis(query_results, vars(args))
+    results_analysis(query_results, vars(args), overall_time)
