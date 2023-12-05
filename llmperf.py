@@ -113,6 +113,8 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], 
 
     return user_prompt, rnd_num
 
+def flatten(l):
+    return [item for sublist in l for item in sublist]
 
 @ray.remote(num_cpus=0.001)
 def validate(ep_config, sample_lines, tokenizer):
@@ -281,7 +283,9 @@ def validate(ep_config, sample_lines, tokenizer):
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
                     # "ignore_eos": True,
+                    
                 },
+                "batch_size": ep_config["batch_size"],
                 "streaming": ep_config["streaming"],
             }
         }
@@ -301,6 +305,7 @@ def validate(ep_config, sample_lines, tokenizer):
                         ttft = time.time() - st
                 time.sleep(0.1)
             et = time.time()
+            tokens = flatten(tokens)
             words = "".join([t for t in tokens if isinstance(t, str)])
         except Exception as e:
             return ("Exception", -1, -1, -1, -1, str(e), "")
@@ -505,6 +510,9 @@ if __name__ == "__main__":
         choices=["llama", "mistral", None],
         help="Prompt template to use.",
     )
+    parser.add_argument(
+        "-b", "--batch-size", type=int, default=1, help="batch size for runpod post requests"
+    )
     args = parser.parse_args()
     load_dotenv()
     endpoint_config = {}
@@ -555,6 +563,7 @@ if __name__ == "__main__":
         endpoint_config["prompt_template"] = args.prompt_template
         endpoint_config["runpod_worker_is_new"] = bool(os.environ["RUNPOD_WORKER_IS_NEW"])
         endpoint_config["streaming"] = args.streaming
+        endpoint_config["batch_size"] = args.batch_size
 
     endpoint_config["framework"] = args.framework
     endpoint_config["model"] = args.model
