@@ -102,11 +102,11 @@ def prompt_generator(num_digits=3, min_lines=15, max_lines=1000, file_lines=[], 
     # Step 2: convert to words.
     rnd_num_words = num2words(rnd_num)
     # Step 3: convert to a prompt
-    if genprompt == "new":
+    if genprompt == "old":
          # Step 3: convert to a prompt
-        user_prompt = f"Convert the following sequence of words into a number: {rnd_num_words}.\nPrint the number first. Then pick {args.req_lines} lines from these poem lines:\n{rnd_picked_lines}"
-    elif genprompt == "old":
-        user_prompt = "Write me a 1000 word long and detailed essay about how the french revolution impacted the rest of europe over the 18th century."
+        user_prompt = f"Convert the following sequence of words into a number: {rnd_num_words}.\nPrint the number first. Then pick {rnd_num_lines} lines from these poem lines:\n{rnd_picked_lines}"
+    elif genprompt == "new":
+        user_prompt = "Write me a 3000 word long and detailed essay about how the french revolution impacted the rest of europe over the 18th century."
     elif genprompt == "both":
         user_prompt = f"Poem Lines:\n {rnd_picked_lines}. \n Write me a 2000 word long and detailed essay about how the poems of shakespeare have impacted the world for the last 400 years."
 
@@ -269,24 +269,21 @@ def validate(ep_config, sample_lines, tokenizer):
             "Authorization": f"Bearer {ep_config['api_key']}",
             "Content-Type": "application/json"
         }
-        if ep_config["prompt_template"] == "llama":
-            input_prompt = llama_prompt(prompt, sys_prompt)
-        elif ep_config["prompt_template"] == "mistral":
-            input_prompt = mistral_prompt(prompt, sys_prompt)
-        else:
-            input_prompt = sys_prompt + "\n" + prompt 
 
         payload = {
             "input": {
-                "prompt":  input_prompt,
+                "messages":  [
+                    {"role": "user", "content": sys_prompt + " \n " + prompt},
+                ],
+                "apply_chat_template": True,
                 "sampling_params": {
                     "max_tokens": args.max_tokens,
                     "temperature": 0,
-                    # "ignore_eos": True,
+                    "ignore_eos": True,
                     
                 },
                 "batch_size": ep_config["batch_size"],
-                "streaming": ep_config["streaming"],
+                "stream": True,
             }
         }
       
@@ -300,10 +297,11 @@ def validate(ep_config, sample_lines, tokenizer):
                 response = requests.get(stream_url, headers=headers).json()
                 if response["status"] == "COMPLETED" :
                     break
-                tokens.extend(token["output"] for token in response["stream"])
+                for batch in response["stream"]:
+                    tokens.extend([t["text"] for t in batch["output"]])
                 if ttft == 0 and len(tokens) > 0:
                         ttft = time.time() - st
-                time.sleep(0.1)
+                time.sleep(0.01)
             et = time.time()
             tokens = flatten(tokens)
             words = "".join([t for t in tokens if isinstance(t, str)])
@@ -438,8 +436,8 @@ def results_analysis(query_results, results_dict, overall_time):
     error_analysis(df)
     results_dict["raw_output"] = fn
     benchmark_result = f"{results_dict['framework']}-{ts}.json"
-    # cols Thoroughput:Avg Token/s (out),	Thoroughput:Avg Token/s (in+out),	Thoroughput: Concurrent tok/s,	Avg end-to-end request time (s),	,	,	total requests,	concurrent requests,	Mean TTFT(ms),	Max TTFT(ms),	TTFT > 3 s:,	ITL (out):
-    print(f"{cdf.out_tokens_per_s.mean():.2f}, {cdf.total_tokens_per_s.mean():.2f}, {all_tokens / results_dict['overall_time']:.2f}, {cdf.total_time.mean():.2f}, , , {len(cdf)}, {args.concur_requests}, {mean_ttft * 1000:.0f}, {max_ttft * 1000:.0f}, {gt_3_ttft * 100:.2f}, {cdf.inter_tokens_delay.mean() * 1000:.2f}")
+    # cols Thoroughput:Avg Token/s (out),	Thoroughput:Avg Token/s (in+out),	Thoroughput: Concurrent tok/s,	Avg end-to-end request time (s),	,	,	total requests,	concurrent requests,	Mean TTFT(ms),	Max TTFT(ms),	TTFT > 3 s:,	ITL (out), Mean Tokens (in), Mean Tokens (out):
+    print(f"{cdf.out_tokens_per_s.mean():.2f}, {cdf.total_tokens_per_s.mean():.2f}, {all_tokens / results_dict['overall_time']:.2f}, {cdf.total_time.mean():.2f}, , , {len(cdf)}, {args.concur_requests}, {mean_ttft * 1000:.0f}, {max_ttft * 1000:.0f}, {gt_3_ttft * 100:.2f}, {cdf.inter_tokens_delay.mean() * 1000:.2f}, {mean_tokens_in:.0f}, {mean_tokens_out:.0f}")
     with open(benchmark_result, "w") as fw:
         fw.write(json.dumps(results_dict))
 
@@ -511,7 +509,7 @@ if __name__ == "__main__":
         help="Prompt template to use.",
     )
     parser.add_argument(
-        "-b", "--batch-size", type=int, default=1, help="batch size for runpod post requests"
+        "-b", "--batch-size", type=int, default=10, help="batch size for runpod post requests"
     )
     args = parser.parse_args()
     load_dotenv()
