@@ -13,6 +13,7 @@ from typing import List, Optional, Union
 import io 
 import time
 import logging
+load_dotenv()
 
 ray.init(logging_level=logging.ERROR)
 
@@ -288,19 +289,26 @@ def validate(ep_config, sample_lines, tokenizer):
         }
       
         try:
+            local_url = os.environ.get("RUNPOD_LOCAL_URL", False)
+            print(f"Local url: {local_url}")
+            if local_url:
+                print("Using local url")
+                url = local_url
+                del headers["Authorization"]
+                
             st = time.time()
             tokens = []
             run_url = url + "/run"
             job_id = requests.post(run_url, headers=headers, json=payload).json()["id"]
             stream_url = url + "/stream/" + job_id
             while True:
-                response = requests.get(stream_url, headers=headers).json()
-                if response["status"] == "COMPLETED" :
-                    break
+                response = requests.get(stream_url, headers=headers).json() if not local_url else requests.post(stream_url, headers=headers).json()
                 for batch in response["stream"]:
                     tokens.extend([t["text"] for t in batch["output"]])
                 if ttft == 0 and len(tokens) > 0:
                         ttft = time.time() - st
+                if response["status"] == "COMPLETED":
+                    break
                 time.sleep(0.01)
             et = time.time()
             tokens = flatten(tokens)
